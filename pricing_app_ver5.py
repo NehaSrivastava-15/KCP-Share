@@ -54,12 +54,12 @@ def load_data(path):
     return df, feature_cols, NON_EDITABLE_ALWAYS, baseline_prices, baseline_shares, total_baseline_share, editable_cols
 
 @st.cache_resource
-def load_model(path, unsafe=False):
+def load_model(path, safe_mode=False, compile=False):
     if not os.path.exists(path): raise FileNotFoundError(f"Model not found: {path}")
     if unsafe:
         try: keras.config.enable_unsafe_deserialization()
         except: pass
-    return keras.models.load_model(path, safe_mode=False)
+    return keras.models.load_model(path, safe_mode=False, compile=False)
 
 # ---------- Page Setup ----------
 st.set_page_config(page_title="KCP Share Simulator", layout="wide")
