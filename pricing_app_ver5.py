@@ -13,7 +13,7 @@ except ImportError:
 
 # ---------- Configuration ----------
 DATA_PATH = "Test.xlsx"
-MODEL_PATH = r"C:\Users\W64295\OneDrive - Kimberly-Clark\2025\DS\categoryShareModel.mft.kcp.keras"
+MODEL_PATH = r"categoryShareModel.mft.kcp.keras"
 
 COLORS = {'primary': '#667eea', 'success': '#2ecc71', 'warning': '#f39c12', 
           'danger': '#e74c3c', 'baseline': '#3498db', 'updated': '#2ecc71'}
