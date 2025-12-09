@@ -1,15 +1,12 @@
 
-# Web app
-streamlit==1.51.0
+streamlit==1.36.0
+numpy==1.24.4
+pandas==2.0.3
+openpyxl==3.1.2
 plotly==5.24.1
 
-# Data I/O
-pandas==2.2.3
-openpyxl==3.1.5
-numpy==1.26.4
+tensorflow==2.12.0
+keras==3.2.0
 
-# ML stack: prefer standalone Keras 3 (no tf.keras deserialization)
-keras==3.4.1
-# (Optional) If your layers rely on TF ops, add TensorFlow too:
-tensorflow==2.17.0
+
 
