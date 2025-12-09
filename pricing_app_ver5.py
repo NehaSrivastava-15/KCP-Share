@@ -59,7 +59,7 @@ def load_model(path, compile=False):
     if unsafe:
         try: keras.config.enable_unsafe_deserialization()
         except: pass
-    return keras.models.load_model(path, safe_mode=False, compile=False)
+    return keras.models.load_model(path, compile=False)
 
 # ---------- Page Setup ----------
 st.set_page_config(page_title="KCP Share Simulator", layout="wide")
@@ -112,7 +112,7 @@ units_base = st.sidebar.number_input("📦 Units Base", min_value=1000, value=59
 # ---------- Load ----------
 with st.spinner("📁 Loading..."):
     df, FEATURE_COLS, NON_EDITABLE, BASELINE_PRICES, BASELINE_SHARES, TOTAL_BASELINE_SHARE, XL_EDITABLE = load_data(DATA_PATH)
-    model = load_model(MODEL_PATH, unsafe=unsafe_load)
+    model = load_model(MODEL_PATH)
 
 SKU_COLS = [c for c in FEATURE_COLS if c not in NON_EDITABLE]
 EDITABLE_COLS = [c for c in XL_EDITABLE if c in SKU_COLS]
