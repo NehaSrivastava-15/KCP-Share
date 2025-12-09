@@ -59,7 +59,7 @@ def load_model(path, compile=False):
    # if unsafe:
     #    try: keras.config.enable_unsafe_deserialization()
      #   except: pass
-    #return keras.models.load_model(path, compile=False)
+    return keras.models.load_model(path, compile=False)
 
 # ---------- Page Setup ----------
 st.set_page_config(page_title="KCP Share Simulator", layout="wide")
