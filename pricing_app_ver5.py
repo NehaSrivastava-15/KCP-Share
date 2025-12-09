@@ -56,10 +56,10 @@ def load_data(path):
 @st.cache_resource
 def load_model(path, compile=False):
     if not os.path.exists(path): raise FileNotFoundError(f"Model not found: {path}")
-    if unsafe:
-        try: keras.config.enable_unsafe_deserialization()
-        except: pass
-    return keras.models.load_model(path, compile=False)
+   # if unsafe:
+    #    try: keras.config.enable_unsafe_deserialization()
+     #   except: pass
+    #return keras.models.load_model(path, compile=False)
 
 # ---------- Page Setup ----------
 st.set_page_config(page_title="KCP Share Simulator", layout="wide")
@@ -106,7 +106,7 @@ st.markdown("<hr style='border: 2px solid #667eea;'>", unsafe_allow_html=True)
 
 # ---------- Sidebar ----------
 st.sidebar.markdown("### ⚙️ Configuration")
-unsafe_load = st.sidebar.checkbox("🔓 Enable unsafe deserialization", value=True)
+#unsafe_load = st.sidebar.checkbox("🔓 Enable unsafe deserialization", value=True)
 units_base = st.sidebar.number_input("📦 Units Base", min_value=1000, value=59000, step=1000)
 
 # ---------- Load ----------
