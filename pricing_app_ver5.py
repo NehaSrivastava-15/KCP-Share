@@ -56,7 +56,7 @@ def load_data(path):
 @st.cache_resource
 def load_model(path, compile=False):
     if not os.path.exists(path): raise FileNotFoundError(f"Model not found: {path}")
-     if unsafe:
+    if unsafe:
         try: keras.config.enable_unsafe_deserialization()
         except: pass
     return keras.models.load_model(path, safe_mode=False)
