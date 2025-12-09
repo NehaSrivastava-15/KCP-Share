@@ -18,7 +18,7 @@ except Exception:
 
 # ---------------- Configuration ----------------
 DATA_PATH = "Test.xlsx"
-MODEL_PATH = "categoryShareModel.mft.kcp.keras"  # ensure this file is in the app directory
+MODEL_PATH = "categoryShareModel.mft.kcp.keras"  # ensure this file is present in the app directory
 COLORS = {
     'primary': '#667eea', 'success': '#2ecc71', 'warning': '#f39c12',
     'danger': '#e74c3c', 'baseline': '#3498db', 'updated': '#2ecc71'
@@ -36,58 +36,12 @@ def fmt_currency(x):
     except Exception:
         return f"₹{x}"
 
-# ---------------- Page Setup ----------------
-st.set_page_config(page_title="KCP Share Simulator", layout="wide")
-st.markdown(
-    '''
-    <style>
-    * { font-family: 'Inter', sans-serif; }
-    .main-header {
-      text-align: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-      font-size: 42px; font-weight: 800; margin-bottom: 10px;
-    }
-    .metric-card {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white; padding: 25px 20px; border-radius: 12px;
-      box-shadow: 0 6px 20px rgba(102, 126, 234, 0.25);
-      text-align: center; transition: all 0.3s ease;
-    }
-    .metric-card:hover { transform: translateY(-5px); box-shadow: 0 10px 30px rgba(102, 126, 234, 0.35); }
-    .metric-card.success { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); }
-    .metric-card.warning { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
-    .metric-value { font-size: 32px; font-weight: 700; margin-top: 8px; }
-    .metric-label { font-size: 11px; opacity: 0.95; text-transform: uppercase; letter-spacing: 1.2px; }
-    .stTabs [role="tab"] {
-      font-size: 16px; font-weight: 600; background-color: white;
-      border: 2px solid #e0e0e0; border-radius: 8px; padding: 10px 20px;
-    }
-    .stTabs [aria-selected="true"] {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white; border: 2px solid #667eea;
-    }
-    .info-box {
-      background: linear-gradient(135deg, #e8eaf6 0%, #f3e5f5 100%);
-      border-left: 4px solid #667eea; padding: 15px; border-radius: 8px; margin: 15px 0;
-    }
-    .badge { padding: 4px 12px; border-radius: 12px; font-size: 11px; font-weight: 600; margin-right: 8px; }
-    .badge-editable { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
-    .badge-locked  { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
-    </style>
-    ''',
-    unsafe_allow_html=True,
-)
-st.markdown('<div class="main-header">🎯 KCP Share Prediction Dashboard</div>', unsafe_allow_html=True)
-st.markdown("<hr style='border: 2px solid #667eea;'>", unsafe_allow_html=True)
-
-# ---------------- Sidebar (define 'unsafe' BEFORE load_model) ----------------
-st.sidebar.markdown("### ⚙️ Configuration")
-units_base = st.sidebar.number_input("📦 Units Base", min_value=1000, value=59000, step=1000)
-
-# Only enable this if your model truly needs legacy/custom deserialization.
-unsafe_ui = st.sidebar.checkbox("🔓 Enable unsafe deserialization", value=False)
-unsafe_secret = bool(st.secrets.get("ENABLE_UNSAFE_DESERIALIZATION", False))
-unsafe = bool(unsafe_ui or unsafe_secret)
+# ---------------- Define 'unsafe' BEFORE load_model ----------------
+# Use secrets by default (Cloud-safe); can be overridden via sidebar later
+try:
+    unsafe = bool(st.secrets.get("ENABLE_UNSAFE_DESERIALIZATION", False))
+except Exception:
+    unsafe = False  # default off unless you explicitly enable it
 
 # ---------------- Data Loader ----------------
 @st.cache_data(show_spinner=False)
@@ -140,12 +94,12 @@ def load_data(path: str):
 
     return df, feature_cols, NON_EDITABLE_ALWAYS, baseline_prices, baseline_shares, total_baseline_share, editable_cols
 
-# ---------------- Model Loader ----------------
+# ---------------- Model Loader (needs 'unsafe' defined above) ----------------
 @st.cache_resource(show_spinner=False)
 def load_model(path: str, compile: bool = False):
     """
     Load a Keras model robustly across TF/Keras versions.
-    - Honors an unsafe flag for legacy/custom objects (uses st.secrets or sidebar).
+    - Honors the global 'unsafe' flag for legacy/custom objects (if supported).
     - Retries without 'safe_mode' for older TF/Keras that don't support it.
     """
     if not os.path.exists(path):
@@ -171,6 +125,51 @@ def load_model(path: str, compile: bool = False):
         raise RuntimeError("Model loaded as None. Check file format and loader.")
     return model
 
+# ---------------- Page Setup ----------------
+st.set_page_config(page_title="KCP Share Simulator", layout="wide")
+st.markdown(
+    '''
+    <style>
+    * { font-family: 'Inter', sans-serif; }
+    .main-header {
+      text-align: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      font-size: 42px; font-weight: 800; margin-bottom: 10px;
+    }
+    .metric-card {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white; padding: 25px 20px; border-radius: 12px;
+      box-shadow: 0 6px 20px rgba(102, 126, 234, 0.25);
+      text-align: center; transition: all 0.3s ease;
+    }
+    .metric-card:hover { transform: translateY(-5px); box-shadow: 0 10px 30px rgba(102, 126, 234, 0.35); }
+    .metric-card.success { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); }
+    .metric-card.warning { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+    .metric-value { font-size: 32px; font-weight: 700; margin-top: 8px; }
+    .metric-label { font-size: 11px; opacity: 0.95; text-transform: uppercase; letter-spacing: 1.2px; }
+    .stTabs [role="tab"] {
+      font-size: 16px; font-weight: 600; background-color: white;
+      border: 2px solid #e0e0e0; border-radius: 8px; padding: 10px 20px;
+    }
+    .stTabs [aria-selected="true"] {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white; border: 2px solid #667eea;
+    }
+    </style>
+    ''',
+    unsafe_allow_html=True,
+)
+st.markdown('<div class="main-header">🎯 KCP Share Prediction Dashboard</div>', unsafe_allow_html=True)
+st.markdown("<hr style='border: 2px solid #667eea;'>", unsafe_allow_html=True)
+
+# ---------------- Sidebar ----------------
+st.sidebar.markdown("### ⚙️ Configuration")
+units_base = st.sidebar.number_input("📦 Units Base", min_value=1000, value=59000, step=1000)
+
+# Optional UI toggle to override the global unsafe flag (kept off by default)
+unsafe_ui = st.sidebar.checkbox("🔓 Enable unsafe deserialization", value=unsafe)
+unsafe = bool(unsafe_ui or unsafe)  # keep True if either source is True
+
 # ----------------- Load Data & Model -----------------
 with st.spinner("📁 Loading data and model..."):
     try:
@@ -186,9 +185,9 @@ with st.spinner("📁 Loading data and model..."):
         st.error(f"Failed to load model: {e}")
         st.stop()
 
-SKU_COLS     = [c for c in FEATURE_COLS if c not in NON_EDITABLE]
+SKU_COLS      = [c for c in FEATURE_COLS if c not in NON_EDITABLE]
 EDITABLE_COLS = [c for c in XL_EDITABLE if c in SKU_COLS]
-LOCKED_COLS  = [c for c in FEATURE_COLS if c not in EDITABLE_COLS]
+LOCKED_COLS   = [c for c in FEATURE_COLS if c not in EDITABLE_COLS]
 
 # ---------------- Price Editor ----------------
 st.markdown("### 🔧 Price Configuration")
