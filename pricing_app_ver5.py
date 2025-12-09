@@ -7,18 +7,18 @@ import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
-# --- Keras/TensorFlow import (robust) ---
+# --- Keras/TensorFlow import (robust across environments) ---
 try:
     # Prefer TensorFlow's Keras on Streamlit Cloud
     from tensorflow import keras as tfkeras
-    _KERAS = tfkeras
+    K = tfkeras
 except Exception:
-    import keras as skeras
-    _KERAS = skeras
+    import keras as k
+    K = k
 
 # ---------------- Configuration ----------------
 DATA_PATH = "Test.xlsx"
-MODEL_PATH = "categoryShareModel.mft.kcp.keras"  # ensure this file is present in the app directory
+MODEL_PATH = "categoryShareModel.mft.kcp.keras"  # ensure this file is in the app directory
 COLORS = {
     'primary': '#667eea', 'success': '#2ecc71', 'warning': '#f39c12',
     'danger': '#e74c3c', 'baseline': '#3498db', 'updated': '#2ecc71'
@@ -80,11 +80,11 @@ st.markdown(
 st.markdown('<div class="main-header">🎯 KCP Share Prediction Dashboard</div>', unsafe_allow_html=True)
 st.markdown("<hr style='border: 2px solid #667eea;'>", unsafe_allow_html=True)
 
-# ---------------- Sidebar ----------------
+# ---------------- Sidebar (define 'unsafe' BEFORE load_model) ----------------
 st.sidebar.markdown("### ⚙️ Configuration")
 units_base = st.sidebar.number_input("📦 Units Base", min_value=1000, value=59000, step=1000)
 
-# Unsafe deserialization toggle (use cautiously)
+# Only enable this if your model truly needs legacy/custom deserialization.
 unsafe_ui = st.sidebar.checkbox("🔓 Enable unsafe deserialization", value=False)
 unsafe_secret = bool(st.secrets.get("ENABLE_UNSAFE_DESERIALIZATION", False))
 unsafe = bool(unsafe_ui or unsafe_secret)
@@ -152,30 +152,30 @@ def load_model(path: str, compile: bool = False):
         raise FileNotFoundError(f"Model not found: {path}")
 
     # Enable unsafe deserialization if requested and supported
-    keras_config = getattr(_KERAS, "config", None)
-    if unsafe and keras_config and hasattr(keras_config, "enable_unsafe_deserialization"):
+    cfg = getattr(K, "config", None)
+    if unsafe and cfg and hasattr(cfg, "enable_unsafe_deserialization"):
         try:
-            keras_config.enable_unsafe_deserialization()
+            cfg.enable_unsafe_deserialization()
         except Exception:
             # Non-fatal: environments without this flag or permission
             pass
 
     # Load model (handle TF/Keras API differences)
     try:
-        model = _KERAS.models.load_model(path, compile=compile, safe_mode=False)
+        model = K.models.load_model(path, compile=compile, safe_mode=False)
     except TypeError:
         # Older versions may not support 'safe_mode'
-        model = _KERAS.models.load_model(path, compile=compile)
+        model = K.models.load_model(path, compile=compile)
 
     if model is None:
         raise RuntimeError("Model loaded as None. Check file format and loader.")
-
     return model
 
 # ----------------- Load Data & Model -----------------
 with st.spinner("📁 Loading data and model..."):
     try:
-        df, FEATURE_COLS, NON_EDITABLE, BASELINE_PRICES, BASELINE_SHARES, TOTAL_BASELINE_SHARE, XL_EDITABLE = load_data(DATA_PATH)
+        (df, FEATURE_COLS, NON_EDITABLE, BASELINE_PRICES,
+         BASELINE_SHARES, TOTAL_BASELINE_SHARE, XL_EDITABLE) = load_data(DATA_PATH)
     except Exception as e:
         st.error(f"Failed to load data: {e}")
         st.stop()
@@ -186,9 +186,9 @@ with st.spinner("📁 Loading data and model..."):
         st.error(f"Failed to load model: {e}")
         st.stop()
 
-SKU_COLS    = [c for c in FEATURE_COLS if c not in NON_EDITABLE]
+SKU_COLS     = [c for c in FEATURE_COLS if c not in NON_EDITABLE]
 EDITABLE_COLS = [c for c in XL_EDITABLE if c in SKU_COLS]
-LOCKED_COLS = [c for c in FEATURE_COLS if c not in EDITABLE_COLS]
+LOCKED_COLS  = [c for c in FEATURE_COLS if c not in EDITABLE_COLS]
 
 # ---------------- Price Editor ----------------
 st.markdown("### 🔧 Price Configuration")
@@ -209,7 +209,8 @@ edited_display = st.data_editor(
 edited_original = edited_display.rename(columns={v: k for k, v in header_name.items()})
 
 BASELINE_INPUTS = {c: float(BASELINE_PRICES[c]) for c in FEATURE_COLS}
-UPDATED_INPUTS  = {c: (float(edited_original.loc["Updated Price", c]) if c in EDITABLE_COLS else BASELINE_INPUTS[c]) for c in FEATURE_COLS}
+UPDATED_INPUTS  = {c: (float(edited_original.loc["Updated Price", c]) if c in EDITABLE_COLS else BASELINE_INPUTS[c])
+                   for c in FEATURE_COLS}
 
 # ---------------- Predictions ----------------
 # Guard: ensure model is usable
@@ -234,7 +235,7 @@ def convert_outputs(arr):
     arr = np.array(arr, dtype=float).reshape(-1)
     if arr.size >= N_SKU + 1:
         kcp_raw, comp_raw = arr[:N_SKU], arr[N_SKU]
-        # Heuristic: if values look like fractions, convert to percentages
+        # If values look like fractions, convert to percentages
         if kcp_raw.sum() + comp_raw <= 1.5:
             kcp_pct, comp_pct = kcp_raw * 100.0, comp_raw * 100.0
         else:
